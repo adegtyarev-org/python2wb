@@ -130,8 +130,60 @@ jobs:
         with:
           files: build/*.deb
           tag_name: ${{ steps.create_tag.outputs.tag }}
-          name: Release ${{ steps.create_tag.outputs.tag }}
+          name: ${{ steps.create_tag.outputs.tag }}
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish_pypi:
+    needs: build_deb
+    if: github.ref == 'refs/heads/main'
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install poetry
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip
+          python3 -m pip install --upgrade pip
+          python3 -m pip install --user poetry
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Generate pyproject.toml from debian/control
+        run: |
+          VER=$(head -n1 debian/changelog | sed -E 's/^[^(]+\(([^)]+)\).*/\1/')
+          NAME=$(grep '^Package:' debian/control | cut -d' ' -f2)
+          DESC=$(grep '^Description:' debian/control | cut -d' ' -f2-)
+          MAINT=$(grep '^Maintainer:' debian/control | cut -d' ' -f2-)
+          LICENSE=$(grep '^License:' debian/control | cut -d' ' -f2-)
+
+          cat > pyproject.toml <<EOF
+          [tool.poetry]
+          name = "$NAME"
+          version = "$VER"
+          description = "$DESC"
+          authors = ["$MAINT"]
+          license = "$LICENSE"
+          
+          [tool.poetry.dependencies]
+          python = "^3.8"
+          paho-mqtt = "^1.6"
+          
+          [build-system]
+          requires = ["poetry-core>=1.0.0"]
+          build-backend = "poetry.core.masonry.api"
+          EOF
+
+      - name: Build wheel
+        run: |
+          poetry install --only main
+          poetry build -f wheel
+
+      - name: Publish to PyPI
+        env:
+          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          poetry publish --username __token__ --password "$POETRY_PYPI_TOKEN_PYPI"      
