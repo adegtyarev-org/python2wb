@@ -48,22 +48,22 @@ jobs:
           MAINT=$(grep '^Maintainer:' debian/control | cut -d' ' -f2-)
           LICENSE=$(grep '^License:' debian/control | cut -d' ' -f2-)
 
-          cat > pyproject.toml <<EOF
-[tool.poetry]
-name = "$NAME"
-version = "$VER"
-description = "$DESC"
-authors = ["$MAINT"]
-license = "$LICENSE"
-
-[tool.poetry.dependencies]
-python = "^3.8"
-paho-mqtt = "^1.6"
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
-EOF
+          cat <<EOF > pyproject.toml
+          [tool.poetry]
+          name = "$NAME"
+          version = "$VER"
+          description = "$DESC"
+          authors = ["$MAINT"]
+          license = "$LICENSE"
+          
+          [tool.poetry.dependencies]
+          python = "^3.8"
+          paho-mqtt = "^1.6"
+          
+          [build-system]
+          requires = ["poetry-core>=1.0.0"]
+          build-backend = "poetry.core.masonry.api"
+          EOF
 
       - name: Install & Test
         run: |
