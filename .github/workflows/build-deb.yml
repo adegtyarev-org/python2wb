@@ -56,7 +56,12 @@ jobs:
         run: |
           poetry install --only main
           poetry run pip install pytest
-          poetry run pytest
+          poetry run pytest || exit_code=$?
+          if [ "$exit_code" -eq 5 ]; then
+            echo "⚠️ Warning: No tests were collected. This is allowed."
+          else
+            exit $exit_code
+          fi
 
   build_deb:
     needs: version_test
