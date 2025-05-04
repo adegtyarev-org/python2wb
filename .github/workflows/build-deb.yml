@@ -16,7 +16,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Python tools (poetry only)
+      - name: Install Python tools
         run: |
           sudo apt-get update
           sudo apt-get install -y python3 python3-pip
@@ -27,25 +27,43 @@ jobs:
       - name: Get version from debian/changelog
         id: get_version
         run: |
-          VER=$(head -n1 debian/changelog \
-                | sed -E 's/^[^(]+\(([^)]+)\).*/\1/')
+          VER=$(head -n1 debian/changelog | sed -E 's/^[^(]+\(([^)]+)\).*/\1/')
           echo "version=$VER" >> $GITHUB_OUTPUT
 
       - name: Check version bump in PR
         if: github.event_name == 'pull_request'
         run: |
           BASE=$(git show origin/${{ github.event.pull_request.base.ref }}:debian/changelog \
-                | head -n1 \
-                | sed -E 's/^[^(]+\(([^)]+)\).*/\1/')
-          if [ "$VER" = "$BASE" ]; then
+            | head -n1 | sed -E 's/^[^(]+\(([^)]+)\).*/\1/')
+          if [ "$BASE" = "${{ steps.get_version.outputs.version }}" ]; then
             echo "Error: версия не изменилась ($BASE)" >&2
             exit 1
           fi
 
-      - name: Sync version into pyproject.toml
+      - name: Generate pyproject.toml from debian/control
         run: |
-          sed -E "s/^version = .*/version = \"${{ steps.get_version.outputs.version }}\"/" \
-            -i pyproject.toml
+          VER="${{ steps.get_version.outputs.version }}"
+          NAME=$(grep '^Package:' debian/control | cut -d' ' -f2)
+          DESC=$(grep '^Description:' debian/control | cut -d' ' -f2-)
+          MAINT=$(grep '^Maintainer:' debian/control | cut -d' ' -f2-)
+          LICENSE=$(grep '^License:' debian/control | cut -d' ' -f2-)
+
+          cat > pyproject.toml <<EOF
+[tool.poetry]
+name = "$NAME"
+version = "$VER"
+description = "$DESC"
+authors = ["$MAINT"]
+license = "$LICENSE"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+paho-mqtt = "^1.6"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+EOF
 
       - name: Install & Test
         run: |
@@ -53,7 +71,7 @@ jobs:
           poetry run pip install pytest
           poetry run pytest || exit_code=$?
           if [ "$exit_code" -eq 5 ]; then
-            echo "⚠️ Warning: No tests were collected. This is allowed."
+            echo "⚠️ No tests were collected. This is allowed."
           else
             exit $exit_code
           fi
@@ -65,34 +83,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install system tools (fpm + poetry)
+      - name: Install dpkg tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3 python3-pip ruby ruby-dev build-essential
-          python3 -m pip install --upgrade pip
-          python3 -m pip install --user poetry
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          sudo gem install fpm -v 1.15.1
+          sudo apt-get install -y dpkg-dev
 
-      - name: Install project deps
-        run: poetry install --no-root --no-dev
-
-      - name: Build wheel
-        run: poetry build -f wheel
-
-      - name: Package .deb
+      - name: Patch version into control
         run: |
           VER=${{ needs.version_test.outputs.version }}
-          fpm -s python -t deb \
-            --name python2wb \
-            --version "$VER" \
-            --license MIT \
-            --maintainer "Alexander Degtyarev <adegtyarev.ap@gmail.com>" \
-            --description "Module for Python integration with Wiren Board MQTT" \
-            dist/python2wb-"$VER"-py3-none-any.whl
+          sed -i -E "s/^Version: .*/Version: $VER/" debian/control
+
+      - name: Build .deb
+        run: |
+          VER=${{ needs.version_test.outputs.version }}
+          mkdir -p build/python2wb_$VER/DEBIAN
+          cp debian/control build/python2wb_$VER/DEBIAN/control
+
+          mkdir -p build/python2wb_$VER/usr/lib/python3/dist-packages
+          cp -r src/python2wb build/python2wb_$VER/usr/lib/python3/dist-packages/
+
+          mkdir -p build/python2wb_$VER/usr/share/doc/python2wb
+          cp LICENSE build/python2wb_$VER/usr/share/doc/python2wb/
+
+          dpkg-deb --build build/python2wb_$VER
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: python2wb_${{ needs.version_test.outputs.version }}.deb
-          path: '*.deb'
+          path: build/*.deb
