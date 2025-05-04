@@ -1,22 +1,17 @@
 [tool.poetry]
 name = "python2wb"
-version = "0.2.1"
-authors = ["Alexander Degtyarev <adegtyarev.ap@gmail.com>"]
+version = "0.0.0"          # будет перезаписываться из CHANGELOG.md в CI
 description = "Module for Python integration with Wiren Board MQTT"
-readme = "README.md"
-keywords = ["mqtt", "wirenboard"]
-packages = [{include = "python2wb"}]
-repository = "https://github.com/aadegtyarev/python2wb"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-]
+authors = ["Alexander Degtyarev <a.degtyarev@wirenboard.com>"]
+license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-paho-mqtt = "^1.6.1"
+paho-mqtt = "^1.6"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.0"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,81 @@
+name: Test & Build .deb
+
+on:
+  pull_request: {}
+  push:
+    branches: [ main ]
+
+jobs:
+  version_test:
+    runs-on: self-hosted
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from debian/changelog
+        id: get_version
+        run: |
+          VER=$(head -n1 debian/changelog \
+                | sed -E 's/^[^(]+\(([^)]+)\).*/\1/')
+          echo "version=$VER" >> $GITHUB_OUTPUT
+
+      - name: Проверка bump версии
+        if: github.event_name == 'pull_request'
+        run: |
+          BASE=$(git show origin/${{ github.event.pull_request.base.ref }}:debian/changelog \
+                | head -n1 \
+                | sed -E 's/^[^(]+\(([^)]+)\).*/\1/')
+          if [ "$VER" = "$BASE" ]; then
+            echo "Error: версия не изменилась ($BASE)" >&2
+            exit 1
+          fi
+
+      - name: Sync version into pyproject.toml
+        run: |
+          sed -E "s/^version = .*/version = \"${{ steps.get_version.outputs.version }}\"/" \
+            -i pyproject.toml
+
+      - name: Install & Test
+        run: |
+          pip install poetry
+          poetry install --no-dev
+          poetry run pytest
+
+  build_deb:
+    needs: version_test
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup build tools
+        run: |
+          pip install poetry
+          sudo gem install --no-document fpm
+
+      - name: Install deps
+        run: poetry install --no-root --no-dev
+
+      - name: Build wheel
+        run: poetry build -f wheel
+
+      - name: Package .deb
+        run: |
+          VER=${{ needs.version_test.outputs.version }}
+          fpm -s python -t deb \
+            --name python2wb \
+            --version "$VER" \
+            --license MIT \
+            --maintainer "You <you@example.com>" \
+            --description "Module for Python integration with Wiren Board MQTT" \
+            dist/python2wb-"$VER"-py3-none-any.whl
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: python2wb_${{ needs.version_test.outputs.version }}.deb
+          path: '*.deb'
