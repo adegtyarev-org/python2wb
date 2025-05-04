@@ -21,8 +21,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3 python3-pip ruby ruby-dev build-essential
 
-      - name: Install Poetry
+      - name: Ensure system and Python tools
         run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip ruby ruby-dev build-essential
           python3 -m pip install --upgrade pip
           python3 -m pip install --user poetry
           echo "$HOME/.local/bin" >> $GITHUB_PATH
@@ -52,7 +54,8 @@ jobs:
 
       - name: Install & Test
         run: |
-          poetry install --no-dev
+          poetry install --only main
+          poetry run pip install pytest
           poetry run pytest
 
   build_deb:
@@ -62,12 +65,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Ensure system dependencies
+      - name: Ensure system and Python tools
         run: |
           sudo apt-get update
           sudo apt-get install -y python3 python3-pip ruby ruby-dev build-essential
-          python3 -m pip install poetry
-          sudo gem install --no-document fpm
+          python3 -m pip install --upgrade pip
+          python3 -m pip install --user poetry
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install deps
         run: poetry install --no-root --no-dev
