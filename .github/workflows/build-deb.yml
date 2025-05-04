@@ -112,3 +112,26 @@ jobs:
         with:
           name: python2wb_${{ needs.version_test.outputs.version }}.deb
           path: build/*.deb
+
+      - name: Create tag
+        id: create_tag
+        if: github.ref == 'refs/heads/main'
+        run: |
+          TAG="v${{ needs.version_test.outputs.version }}"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag "$TAG"
+          git push origin "$TAG"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Release on GitHub
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/*.deb
+          tag_name: ${{ steps.create_tag.outputs.tag }}
+          name: Release ${{ steps.create_tag.outputs.tag }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
