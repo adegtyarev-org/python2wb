@@ -2,7 +2,7 @@
 name = "python2wb"
 version = "0.0.0"          # будет перезаписываться из CHANGELOG.md в CI
 description = "Module for Python integration with Wiren Board MQTT"
-authors = ["Alexander Degtyarev <a.degtyarev@wirenboard.com>"]
+authors = ["Alexander Degtyarev <adegtyarev.ap@gmail.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
