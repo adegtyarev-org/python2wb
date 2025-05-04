@@ -96,7 +96,7 @@ jobs:
             dist/python2wb-"$VER"-py3-none-any.whl
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: python2wb_${{ needs.version_test.outputs.version }}.deb
           path: '*.deb'
