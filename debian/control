@@ -1,0 +1,9 @@
+Package: python2wb
+Version: 0.2.2
+Section: python
+Priority: optional
+Architecture: all
+Depends: python3, python3-paho-mqtt
+Maintainer: Alexander Degtyarev <adegtyarev.ap@gmail.com>
+Description: Module for Python integration with Wiren Board MQTT
+
