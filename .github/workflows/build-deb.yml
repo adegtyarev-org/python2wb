@@ -16,15 +16,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Ensure system dependencies
+      - name: Install Python tools (poetry only)
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3 python3-pip ruby ruby-dev build-essential
-
-      - name: Ensure system and Python tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3 python3-pip ruby ruby-dev build-essential
+          sudo apt-get install -y python3 python3-pip
           python3 -m pip install --upgrade pip
           python3 -m pip install --user poetry
           echo "$HOME/.local/bin" >> $GITHUB_PATH
@@ -36,7 +31,7 @@ jobs:
                 | sed -E 's/^[^(]+\(([^)]+)\).*/\1/')
           echo "version=$VER" >> $GITHUB_OUTPUT
 
-      - name: Проверка bump версии
+      - name: Check version bump in PR
         if: github.event_name == 'pull_request'
         run: |
           BASE=$(git show origin/${{ github.event.pull_request.base.ref }}:debian/changelog \
@@ -70,15 +65,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Ensure system and Python tools
+      - name: Install system tools (fpm + poetry)
         run: |
           sudo apt-get update
           sudo apt-get install -y python3 python3-pip ruby ruby-dev build-essential
           python3 -m pip install --upgrade pip
           python3 -m pip install --user poetry
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+          sudo gem install --no-document fpm
 
-      - name: Install deps
+      - name: Install project deps
         run: poetry install --no-root --no-dev
 
       - name: Build wheel
@@ -91,7 +87,7 @@ jobs:
             --name python2wb \
             --version "$VER" \
             --license MIT \
-            --maintainer "You <you@example.com>" \
+            --maintainer "Alexander Degtyarev <adegtyarev.ap@gmail.com>" \
             --description "Module for Python integration with Wiren Board MQTT" \
             dist/python2wb-"$VER"-py3-none-any.whl
 
