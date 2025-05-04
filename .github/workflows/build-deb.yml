@@ -130,7 +130,7 @@ jobs:
         with:
           files: build/*.deb
           tag_name: ${{ steps.create_tag.outputs.tag }}
-          name: Release ${{ steps.create_tag.outputs.tag }}
+          name: ${{ steps.create_tag.outputs.tag }}
           draft: false
           prerelease: false
         env:
