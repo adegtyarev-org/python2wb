@@ -16,6 +16,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Ensure system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip ruby ruby-dev build-essential
+
+      - name: Install Poetry
+        run: python3 -m pip install --upgrade pip && pip install poetry
+
       - name: Get version from debian/changelog
         id: get_version
         run: |
@@ -41,7 +49,6 @@ jobs:
 
       - name: Install & Test
         run: |
-          pip install poetry
           poetry install --no-dev
           poetry run pytest
 
@@ -52,9 +59,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup build tools
+      - name: Ensure system dependencies
         run: |
-          pip install poetry
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip ruby ruby-dev build-essential
+          python3 -m pip install poetry
           sudo gem install --no-document fpm
 
       - name: Install deps
