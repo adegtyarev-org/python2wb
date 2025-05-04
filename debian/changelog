@@ -1,3 +1,9 @@
+python2wb (0.2.4) unstable; urgency=medium
+
+  * No functional changes. Add description for PyPi.
+
+ -- Alexander Degtyarev <adegtyarev.ap@gmail.com>  Sat, 04 May 2025 19:20:00 +0400
+
 python2wb (0.2.3) unstable; urgency=medium
 
   * No functional changes. Updated the publication on PyPI.
