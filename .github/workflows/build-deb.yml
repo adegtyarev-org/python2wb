@@ -72,7 +72,7 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install --user poetry
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-          sudo gem install --no-document fpm
+          sudo gem install fpm -v 1.15.1
 
       - name: Install project deps
         run: poetry install --no-root --no-dev
