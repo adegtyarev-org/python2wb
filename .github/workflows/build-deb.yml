@@ -167,6 +167,7 @@ jobs:
           description = "$DESC"
           authors = ["$MAINT"]
           license = "$LICENSE"
+          readme = "README.md"
           
           [tool.poetry.dependencies]
           python = "^3.8"
